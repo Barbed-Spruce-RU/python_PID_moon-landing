@@ -18,18 +18,20 @@ def load_sprites():
 
 
 class Ship:
-    def __init__(self):
+    def __init__(self, K_p, K_i, K_d, x):
         self.mass = 1000  # kg
         self.max_trust = 2000  # N
-        self.height = 100000  # m
+        self.height = 10000  # m
         self.thrust = 0  # N
         self.V = 0  # m/s^2
         self.I = 0
+        self.x = x
+        self.name = 'Ship A'
         self.V_want = 60  # m/s
         self.prev_err = 0
-        self.K_i = 20
-        self.K_p = 200
-        self.K_d = 0.05
+        self.K_i = K_i
+        self.K_p = K_p
+        self.K_d = K_d
         self.sprites = load_sprites()
 
     def calculate_acceleration(self):
@@ -40,7 +42,7 @@ class Ship:
 
     def move(self):
         a = self.calculate_acceleration()
-        if self.height > 0:
+        if self.height > 100:
             self.V += a*dt
             self.height -= self.V*dt
         elif a < 0:
@@ -55,7 +57,7 @@ class Ship:
             self.thrust = 0
             self.I = 0
         if self.thrust > 0 and self.mass > 300:
-            self.mass -= self.thrust/20000000
+            self.mass -= self.thrust/2000000
 
         print(f'h = {f"{self.height:.2f}".zfill(9)}; V = {self.V:.2f}; F = {
               self.thrust:.2f}, m = {self.mass:.2f}', end='\t\t\t\r')
@@ -84,19 +86,24 @@ class Ship:
             sprite = self.sprites[sprite_num]
         except IndexError:
             sprite = self.sprites[0]
-        win.blit(sprite, (145, 790-(a.height/120000*800)))
+        win.blit(sprite, (self.x, 790-(self.height/10000*800)))
+    
+    def change_PID(self, K_p, K_i, K_d):
+        self.K_p=K_p
+        self.K_i=K_i
+        self.K_d=K_d
 
 
-a = Ship()
+ships = [Ship(200, 60, 2, 50), Ship(100, 30, 2, 100), Ship(50, 30, 2, 150)]
 run = True
 while run:
-    a.move()
     win.fill((0, 0, 0))
-    a.render_ship()
+    for ship in ships:
+        ship.move()
+        ship.render_ship()
     events = pg.event.get()
+    ships[0].change_PID((10000-ships[0].height)/100, ships[0].K_i, ships[0].K_d)
     for i in events:
         if i.type == pg.QUIT:
             run = False
     pg.display.update()
-    if a.height <= 0:
-        break
